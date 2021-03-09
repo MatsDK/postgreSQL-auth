@@ -12,7 +12,7 @@
     "module": "commonjs",
     "moduleResolution": "node",
     "noEmit": true,
-    "noUnusedLocals": true,
+    "noUnusedLocals": false,
     "noImplicitAny": false,
     // "noUnusedParameters": true,
     "preserveConstEnums": true,

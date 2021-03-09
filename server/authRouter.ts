@@ -2,6 +2,7 @@ import express, { Request, Response } from "express";
 import db from "./db";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
+import tokens from "./jwtTokens";
 
 const router = express.Router();
 
@@ -9,8 +10,51 @@ interface dbUser {
   id: number;
   username: string;
   email: string;
+  refresh_token?: string;
   password?: string;
+  iat?: number;
+  exp?: number;
 }
+
+router.post("/", (req: Request, res: Response) => {
+  try {
+    const cookie: string = req.body?.cookie?.jid;
+    if (!cookie) return res.json({ isAuth: false });
+
+    jwt.verify(
+      cookie,
+      process.env.ACCESS_TOKEN_SECRET!,
+      async (err: any, user: any) => {
+        if (!err) {
+          delete user.iat, delete user.exp, delete user.refresh_token;
+          return res.json({ isAuth: true, user });
+        }
+
+        const decodedCookie: any = jwt.decode(cookie);
+        if (!decodedCookie.id) return res.json({ isAuth: false });
+
+        const thisUserRes = await db.query(
+          "SELECT * FROM person WHERE id = $1",
+          [decodedCookie.id]
+        );
+        const userRefreshToken = thisUserRes.rows[0]?.refresh_token;
+        jwt.verify(
+          userRefreshToken,
+          process.env.REFRESH_TOKEN_SECRET!,
+          (err: any, dbUser: any) => {
+            if (err) res.json({ isAuth: false });
+
+            delete dbUser.iat, delete dbUser.exp;
+            const accessToken = tokens.generateAccessToken(dbUser);
+            res.json({ isAuth: true, cookie: accessToken, user: dbUser });
+          }
+        );
+      }
+    );
+  } catch (err) {
+    return res.json({ err: true, data: err.message });
+  }
+});
 
 router.post("/register", async (req: Request, res: Response) => {
   try {
@@ -30,21 +74,16 @@ router.post("/register", async (req: Request, res: Response) => {
       });
 
     const hashedPassword: string = await bcrypt.hash(password, 10);
-    const dbRes = await db.query(
-      "INSERT INTO person (id, username, email, password) VALUES (nextval('person_sequence'), $1, $2, $3 ) RETURNING * ",
+    await db.query(
+      `INSERT INTO person (id, username, email, password) 
+      VALUES (nextval('person_sequence'), $1, $2, $3 ) RETURNING * `,
       [userName, email, hashedPassword]
     );
-    const newUser: dbUser[] = dbRes.rows[0];
-
-    console.log(newUser);
-    res.json({ msg: "test" });
+    res.json({ err: false, redirect: true });
   } catch (err) {
     return res.json({ err: true, data: err.message });
   }
 });
-
-const secret =
-  "4d9d57a264789ca52115d4942a8b4bcb5baac184f0b934bf8dcd84dce75b967725ddbbbb047bdbfbe0986744081aece855f1c60e5978cb07e36b710fd4f9df8e";
 
 router.post("/login", async (req: Request, res: Response) => {
   try {
@@ -60,7 +99,7 @@ router.post("/login", async (req: Request, res: Response) => {
     bcrypt.compare(
       password,
       thisUser.password,
-      (err: undefined | string, isCorrect: boolean) => {
+      async (err: undefined | string, isCorrect: boolean) => {
         if (err) throw err;
         if (!isCorrect)
           return res.json({
@@ -69,16 +108,20 @@ router.post("/login", async (req: Request, res: Response) => {
             redirect: false,
           });
 
-        delete thisUser.password;
-        const accessToken = jwt.sign(thisUser, secret, {
-          expiresIn: "2h",
-        });
+        delete thisUser.password, delete thisUser.refresh_token;
+        const accessToken = tokens.generateAccessToken(thisUser);
+        const refreshToken = tokens.generateRefreshToken(thisUser);
+
+        await db.query("UPDATE person SET refresh_token = $1 WHERE id = $2", [
+          refreshToken,
+          thisUser.id,
+        ]);
 
         res.json({ err: false, redirect: true, cookie: accessToken });
       }
     );
   } catch (err) {
-    console.log(err.message);
+    return res.json({ err: true, data: err.message });
   }
 });
 

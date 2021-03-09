@@ -1,11 +1,13 @@
 import Link from "next/link";
 import axios from "axios";
 import { useState } from "react";
+import { NextRouter, useRouter } from "next/router";
 
 const register: React.FC = (): JSX.Element => {
   const [userName, setUserName] = useState<string>("");
   const [email, setEmail] = useState<string>("");
   const [password, setPassword] = useState<string>("");
+  const router: NextRouter = useRouter();
 
   const handleSubmit = (e: any) => {
     e.preventDefault();
@@ -14,15 +16,15 @@ const register: React.FC = (): JSX.Element => {
       !email.replace(/\s/g, "").length ||
       !password.replace(/\s/g, "").length
     )
-      return alert("input not valid");
-    console.log(userName, email, password);
+      return alert("Input not valid");
 
     axios({
       url: "http://localhost:3001/auth/register",
       method: "POST",
       data: { userName, email, password },
     }).then((res) => {
-      console.log(res.data);
+      if (res.data.err) return alert(res.data.data);
+      if (res.data.redirect) router.push("/login");
     });
   };
 

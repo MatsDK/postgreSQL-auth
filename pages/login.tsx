@@ -22,12 +22,10 @@ const login = (): JSX.Element => {
       data: { email, password },
     }).then((res) => {
       if (res.data.err) return alert(res.data.data);
-      if (res.data.cookie) {
-        console.log(cookie);
+      if (res.data.cookie)
         setCookie("jid", res.data.cookie, {
           maxAge: 7200,
         });
-      }
       if (res.data.redirect) router.push("/");
     });
   };
