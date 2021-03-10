@@ -3,6 +3,7 @@ import express, { Application, Request, Response } from "express";
 import bodyParser from "body-parser";
 import cors from "cors";
 import authRouter from "./authRouter";
+import indexRouter from "./indexRouter";
 
 const dev = process.env.NODE_ENV !== "production";
 const app = next({ dev });
@@ -17,6 +18,7 @@ app
     app.use(cors());
 
     app.use("/auth", authRouter);
+    app.use("/", indexRouter);
 
     app.get("*", (req: Request, res: Response) => {
       return handle(req, res);

@@ -3,6 +3,7 @@ import db from "./db";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import tokens from "./jwtTokens";
+import { isAuth } from "./middleware/authMiddleware";
 
 const router = express.Router();
 
@@ -16,44 +17,14 @@ interface dbUser {
   exp?: number;
 }
 
-router.post("/", (req: Request, res: Response) => {
-  try {
-    const cookie: string = req.body?.cookie?.jid;
-    if (!cookie) return res.json({ isAuth: false });
+interface authExpressReq extends Request {
+  cookie?: string;
+  user?: object;
+  body: any;
+}
 
-    jwt.verify(
-      cookie,
-      process.env.ACCESS_TOKEN_SECRET!,
-      async (err: any, user: any) => {
-        if (!err) {
-          delete user.iat, delete user.exp, delete user.refresh_token;
-          return res.json({ isAuth: true, user });
-        }
-
-        const decodedCookie: any = jwt.decode(cookie);
-        if (!decodedCookie.id) return res.json({ isAuth: false });
-
-        const thisUserRes = await db.query(
-          "SELECT * FROM person WHERE id = $1",
-          [decodedCookie.id]
-        );
-        const userRefreshToken = thisUserRes.rows[0]?.refresh_token;
-        jwt.verify(
-          userRefreshToken,
-          process.env.REFRESH_TOKEN_SECRET!,
-          (err: any, dbUser: any) => {
-            if (err) res.json({ isAuth: false });
-
-            delete dbUser.iat, delete dbUser.exp;
-            const accessToken = tokens.generateAccessToken(dbUser);
-            res.json({ isAuth: true, cookie: accessToken, user: dbUser });
-          }
-        );
-      }
-    );
-  } catch (err) {
-    return res.json({ err: true, data: err.message });
-  }
+router.post("/", isAuth, (req: authExpressReq, res: Response) => {
+  return res.json({ user: req.user, isAuth: true, cookie: req.cookie });
 });
 
 router.post("/register", async (req: Request, res: Response) => {
