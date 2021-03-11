@@ -3,6 +3,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { NextRouter, useRouter } from "next/router";
 import { useCookies } from "react-cookie";
+import styles from "../css/index.module.css";
 
 const login = (): JSX.Element => {
   const [cookie, setCookie] = useCookies(["jid"]);
@@ -32,9 +33,14 @@ const login = (): JSX.Element => {
 
   return (
     <div>
-      <Link href="/">Home</Link>
-      <Link href="/register">Register</Link>
-      <form onSubmit={handleSubmit}>
+      <div className={styles.navBar}>
+        <div>
+          <Link href="/">Home</Link>
+          <Link href="/register">Register</Link>
+          <Link href="/login">Login</Link>
+        </div>
+      </div>
+      <form onSubmit={handleSubmit} className={styles.authForm}>
         <input
           type="email"
           placeholder="email"

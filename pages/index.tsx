@@ -6,6 +6,7 @@ import { GetServerSideProps, GetServerSidePropsContext } from "next";
 import { useCookies } from "react-cookie";
 import styles from "../css/index.module.css";
 import Textarea from "react-expanding-textarea";
+import { NextRouter, useRouter } from "next/router";
 
 interface userObject {
   id: number;
@@ -35,8 +36,12 @@ const Index = (props: indexProps): JSX.Element => {
   const [isAuth, setIsAuth] = useState<boolean>(props.isAuth);
   const [taskTitle, setTaskTitle] = useState<string>("");
   const [openTasks, setOpenTasks] = useState<openTasks[]>([]);
+  const [completedTasks, setCompletedTasks] = useState<takenTasks[]>([]);
   const [takenTasks, setTakenTasks] = useState<takenTasks[]>([]);
+  const [otherTakenTasks, setOtherTakenTasks] = useState<takenTasks[]>([]);
+  const [myTakenTasks, setMyTakenTasks] = useState<takenTasks[]>([]);
   const [taskBody, setTaskBody] = useState<string>("");
+  const router: NextRouter = useRouter();
 
   useEffect(() => {
     if (props.cookie)
@@ -50,10 +55,23 @@ const Index = (props: indexProps): JSX.Element => {
       }).then((res) => {
         if (res.data.err) return alert(res.data.data);
         setOpenTasks(res.data.data.openTasks.reverse());
+        setCompletedTasks(res.data.data.doneTasks.reverse());
         setTakenTasks(res.data.data.takenTasks.reverse());
       });
     }
   }, []);
+
+  useEffect(() => {
+    let myTasks: takenTasks[] = [],
+      otherTasks: takenTasks[] = [];
+    takenTasks.forEach((task: takenTasks) => {
+      if (task.user_id === props.user.id) myTasks.push(task);
+      else otherTasks.push(task);
+    });
+
+    setMyTakenTasks(myTasks);
+    setOtherTakenTasks(otherTasks);
+  }, [takenTasks]);
 
   const createTask = (e: any) => {
     if (!isAuth) return;
@@ -96,11 +114,61 @@ const Index = (props: indexProps): JSX.Element => {
     });
   };
 
+  const removeTask = (taskId: number) => {
+    if (!isAuth) return;
+
+    axios({
+      method: "DELETE",
+      url: "http://localhost:3001/removeTask",
+      data: { taskId, cookie },
+    }).then((res) => {
+      if (res.data.err) return alert(res.data.data);
+      if ("isAuth" in res.data) setIsAuth(res.data.isAuth);
+      if (res.data.cookie) setCookie("jid", res.data.cookie, { maxAge: 7200 });
+
+      setOpenTasks((openTasks) => [res.data.data.newOpenTask, ...openTasks]);
+      setTakenTasks(res.data.data.takenTasks);
+    });
+  };
+
+  const completedTask = (taskId: number) => {
+    if (!isAuth) return;
+
+    axios({
+      method: "POST",
+      url: "http://localhost:3001/completedTask",
+      data: { taskId, cookie },
+    }).then((res) => {
+      if (res.data.err) return alert(res.data.data);
+      if ("isAuth" in res.data) setIsAuth(res.data.isAuth);
+      if (res.data.cookie) setCookie("jid", res.data.cookie, { maxAge: 7200 });
+
+      setCompletedTasks((completedTask) => [
+        res.data.data.newCompletedTask,
+        ...completedTask,
+      ]);
+      setTakenTasks(res.data.data.takenTasks);
+    });
+  };
+
+  const hanleLogout = () => {
+    setCookie("jid", "", { maxAge: 0 });
+    setIsAuth(false);
+    router.push("/");
+  };
+
   return (
     <div>
       <div className={styles.navBar}>
-        <Link href="/register">Register</Link>
-        {!isAuth ? <Link href="/login">Login</Link> : <div>logout</div>}
+        <div>
+          <Link href="/">Home</Link>
+          <Link href="/register">Register</Link>
+          {!isAuth ? (
+            <Link href="/login">Login</Link>
+          ) : (
+            <div onClick={hanleLogout}>Logout</div>
+          )}
+        </div>
         {isAuth && <p>Logged in as {props.user.username}</p>}
       </div>
       {isAuth ? (
@@ -137,8 +205,32 @@ const Index = (props: indexProps): JSX.Element => {
           </div>
           <div className={styles.takenTasks}>
             <h2 className={styles.openTasksHeader}>Taken Tasks</h2>
-            {takenTasks.map((task: takenTasks) => (
-              <div key={task.id} className={styles.task}>
+            {myTakenTasks.map((task: takenTasks) => (
+              <div key={task.id} className={styles.myTakenTasks}>
+                <p>{task.user_name}</p>
+                <h5>{task.title}</h5>
+                <pre>{task.body}</pre>
+                <div className={styles.bottomTask}>
+                  <button onClick={() => removeTask(task.id)}>Remove</button>
+                  <button onClick={() => completedTask(task.id)}>Done</button>
+                </div>
+              </div>
+            ))}
+            {!!myTakenTasks.length && (
+              <div className={styles.separatorLine}></div>
+            )}
+            {otherTakenTasks.map((task: takenTasks) => (
+              <div key={task.id} className={styles.takenTask}>
+                <p>{task.user_name}</p>
+                <h5>{task.title}</h5>
+                <pre>{task.body}</pre>
+              </div>
+            ))}
+          </div>
+          <div className={styles.takenTasks}>
+            <h2 className={styles.openTasksHeader}>Completed Tasks</h2>
+            {completedTasks.map((task: takenTasks) => (
+              <div key={task.id} className={styles.takenTask}>
                 <p>{task.user_name}</p>
                 <h5>{task.title}</h5>
                 <pre>{task.body}</pre>
@@ -147,8 +239,9 @@ const Index = (props: indexProps): JSX.Element => {
           </div>
         </div>
       ) : (
-        <div>
-          <Link href="/login">Login to see the tasks</Link>
+        <div className={styles.loginMsg}>
+          <Link href="/login">Login</Link>
+          to see the tasks
         </div>
       )}
     </div>

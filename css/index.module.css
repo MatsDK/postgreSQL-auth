@@ -1,4 +1,6 @@
-.task {
+.task,
+.takenTask,
+.myTakenTasks {
   padding: 20px;
   background-color: rgb(252, 252, 252);
   border-radius: 5px;
@@ -10,7 +12,9 @@
   width: calc(100% - 40px);
 }
 
-.task:hover {
+.task:hover,
+.takenTask:hover,
+.myTakenTasks {
   transform: translateY(-4px);
 }
 
@@ -29,15 +33,33 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  /* flex: 1; */
   width: 33vw;
   border-right: 2px solid rgba(153, 153, 153, 0.226);
 }
 
 .task pre,
 .task h5,
-.task p {
+.task p,
+.takenTask pre,
+.takenTask h5,
+.takenTask p,
+.myTakenTasks pre,
+.myTakenTasks h5,
+.myTakenTasks p {
   margin: 0;
+}
+.myTakenTasks h5,
+.myTakenTasks pre,
+.takenTask h5,
+.takenTask pre {
+  padding-left: 10px;
+}
+
+.takenTask p,
+.myTakenTasks p {
+  font-size: 18px;
+  font-weight: 600;
+  margin-bottom: 4px;
 }
 
 .newTaskForm {
@@ -75,8 +97,27 @@
   font-weight: 500;
 }
 
-.takenTasks .task {
+.takenTask,
+.myTakenTasks {
+  padding: 10px;
   padding-top: 5px;
+  width: calc(100% - 20px);
+}
+
+.myTakenTasks .bottomTask {
+  opacity: 0;
+  display: flex;
+  justify-content: flex-end;
+  transition: 0.15s ease;
+}
+
+.myTakenTasks {
+  padding-right: 5px;
+  padding-bottom: 5px;
+}
+
+.myTakenTasks:hover .bottomTask {
+  opacity: 1;
 }
 
 .textArea {
@@ -104,6 +145,28 @@
 .navBar {
   display: flex;
   height: 50px;
+  align-items: center;
+  justify-content: space-between;
+  margin: 0px 10px;
+  font-size: 18px;
+}
+.navBar a,
+.navBar div {
+  cursor: pointer;
+  text-decoration: none !important;
+  color: #000;
+}
+.navBar div {
+  display: flex;
+  transition: 0.2s ease;
+}
+
+.navBar div div:hover,
+.navBar div a:hover {
+  color: rgb(78, 78, 78);
+}
+.navBar div a {
+  margin-right: 10px;
 }
 
 .bottomTask {
@@ -116,9 +179,10 @@
 
 .bottomTask button {
   border: 0;
-  padding: 3px 6px;
+  padding: 1px 6px;
   font-size: 16px;
   cursor: pointer;
+  margin-left: 4px;
   background-color: transparent;
   border: 1px solid rgba(153, 153, 153, 0.623);
   transition: 0.1s ease;
@@ -129,4 +193,70 @@
 
 .bottomTask button:hover {
   background-color: rgba(228, 228, 228, 0.719);
+}
+
+.separatorLine {
+  width: 100%;
+  height: 2px;
+  background-color: rgba(153, 153, 153, 0.226);
+}
+
+.authForm {
+  flex: 1;
+  width: 100%;
+  height: calc(100vh - 50px);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
+.authForm input {
+  width: 250px;
+  height: 30px;
+  font-size: 18px;
+  padding: 0 10px;
+  border-radius: 4px;
+  border: 1px solid rgba(153, 153, 153, 0.623);
+  margin: 5px 0;
+  outline: none;
+}
+
+.authForm button {
+  cursor: pointer;
+  font-size: 18px;
+  padding: 5px 10px;
+  border: 1px solid rgba(153, 153, 153, 0.623);
+  background-color: rgba(153, 153, 153, 0.164);
+  border-radius: 5px;
+  transition: 0.15s ease;
+
+  color: rgba(0, 0, 0, 0.712);
+}
+.authForm button:hover {
+  color: #000;
+}
+
+.loginMsg {
+  height: calc(100vh - 50px);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.loginMsg a {
+  text-decoration: none;
+  color: #000;
+  margin-right: 5px;
+  font-size: 20px;
+  transition: 0.15s ease;
+  color: rgba(0, 0, 0, 0.712);
+}
+
+.loginMsg a:hover {
+  color: #000;
+}
+
+.loginMsg {
+  font-size: 20px;
 }
